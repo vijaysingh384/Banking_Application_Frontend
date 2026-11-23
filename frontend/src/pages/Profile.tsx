@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api, readErrorMessage } from "../services/api";
+import LoanStatusBadge from "../features/loans/LoanStatusBadge";
 
 interface Account {
   id: number;
@@ -12,7 +13,9 @@ interface Account {
 interface Loan {
   id: number;
   userId: number;
+  accountId?: number;
   sanctionAmount: number;
+  status?: string;
 }
 
 const Profile = () => {
@@ -52,10 +55,10 @@ const Profile = () => {
     0
   );
 
-  const totalLoan = loans.reduce(
-    (sum, loan) => sum + Number(loan.sanctionAmount ?? 0),
-    0
-  );
+  // Only approved loans count: a pending loan has not been paid out yet.
+  const totalLoan = loans
+    .filter((loan) => loan.status?.toUpperCase() === "APPROVED")
+    .reduce((sum, loan) => sum + Number(loan.sanctionAmount ?? 0), 0);
 
   return (
     <div className="space-y-8">
@@ -105,7 +108,7 @@ const Profile = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <p className="text-gray-500">Total Loan Amount</p>
+          <p className="text-gray-500">Approved Loan Amount</p>
           <p className="text-3xl font-bold text-indigo-600">
             ₹ {totalLoan.toLocaleString()}
           </p>
@@ -206,14 +209,16 @@ const Profile = () => {
                 <thead className="bg-indigo-600 text-white">
                   <tr>
                     <th className="px-6 py-3">Loan ID</th>
+                    <th className="px-6 py-3">Account</th>
                     <th className="px-6 py-3">Loan Amount</th>
+                    <th className="px-6 py-3">Status</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {loans.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="text-center py-6 text-gray-500">
+                      <td colSpan={4} className="text-center py-6 text-gray-500">
                         You have not applied for a loan yet.
                       </td>
                     </tr>
@@ -221,8 +226,12 @@ const Profile = () => {
                     loans.map((loan) => (
                       <tr key={loan.id} className="border-b hover:bg-gray-100">
                         <td className="px-6 py-4">{loan.id}</td>
+                        <td className="px-6 py-4">{loan.accountId ?? "-"}</td>
                         <td className="px-6 py-4 font-semibold text-indigo-600">
                           ₹ {Number(loan.sanctionAmount ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <LoanStatusBadge status={loan.status} />
                         </td>
                       </tr>
                     ))
